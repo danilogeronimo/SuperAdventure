@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace Engine
 {
-    public class Location
+    public class LivingCreature
     {
-        public int ID { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
+        public int CurrentHitPoints { get; set; }
+        public int MaximumHitPoints { get; set; }
     }
 }
