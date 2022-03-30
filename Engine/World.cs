@@ -160,13 +160,13 @@ namespace Engine
             Locations.Add(spiderField);
         }
 
-        public static Item ItemByID(int id) => Items.SingleOrDefault(v => v.ID == id);
+        public static Item ItemByID(int id) => Items.Single(v => v.ID == id);
 
-        public static Monster MonsterByID(int id) => Monsters.SingleOrDefault(v => v.ID == id);
+        public static Monster MonsterByID(int id) => Monsters.Single(v => v.ID == id);
 
-        public static Quest QuestByID(int id) => Quests.SingleOrDefault(v => v.ID == id);
+        public static Quest QuestByID(int id) => Quests.Single(v => v.ID == id);
 
-        public static Location LocationByID(int id) => Locations.SingleOrDefault(v => v.ID == id);
+        public static Location LocationByID(int id) => Locations.Single(v => v.ID == id);
 
     }
 }

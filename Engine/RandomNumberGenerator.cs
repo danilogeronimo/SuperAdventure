@@ -23,3 +23,4 @@ namespace Engine
             return (int)(minimumValue + multiplier);
         }
     }
+}
