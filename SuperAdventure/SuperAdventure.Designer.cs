@@ -46,7 +46,7 @@
             this.btnSouth = new System.Windows.Forms.Button();
             this.btnWest = new System.Windows.Forms.Button();
             this.rtbLocation = new System.Windows.Forms.RichTextBox();
-            this.rtvMessages = new System.Windows.Forms.RichTextBox();
+            this.rtbMessages = new System.Windows.Forms.RichTextBox();
             this.dgvQuests = new System.Windows.Forms.DataGridView();
             this.dgvInventory = new System.Windows.Forms.DataGridView();
             ((System.ComponentModel.ISupportInitialize)(this.dgvQuests)).BeginInit();
@@ -219,14 +219,14 @@
             this.rtbLocation.TabIndex = 17;
             this.rtbLocation.Text = "";
             // 
-            // rtvMessages
+            // rtbMessages
             // 
-            this.rtvMessages.Location = new System.Drawing.Point(347, 130);
-            this.rtvMessages.Name = "rtvMessages";
-            this.rtvMessages.ReadOnly = true;
-            this.rtvMessages.Size = new System.Drawing.Size(360, 286);
-            this.rtvMessages.TabIndex = 18;
-            this.rtvMessages.Text = "";
+            this.rtbMessages.Location = new System.Drawing.Point(347, 130);
+            this.rtbMessages.Name = "rtbMessages";
+            this.rtbMessages.ReadOnly = true;
+            this.rtbMessages.Size = new System.Drawing.Size(360, 286);
+            this.rtbMessages.TabIndex = 18;
+            this.rtbMessages.Text = "";
             // 
             // dgvQuests
             // 
@@ -269,7 +269,7 @@
             this.ClientSize = new System.Drawing.Size(719, 651);
             this.Controls.Add(this.dgvInventory);
             this.Controls.Add(this.dgvQuests);
-            this.Controls.Add(this.rtvMessages);
+            this.Controls.Add(this.rtbMessages);
             this.Controls.Add(this.rtbLocation);
             this.Controls.Add(this.btnWest);
             this.Controls.Add(this.btnSouth);
@@ -317,7 +317,7 @@
         private Button btnSouth;
         private Button btnWest;
         private RichTextBox rtbLocation;
-        private RichTextBox rtvMessages;
+        private RichTextBox rtbMessages;
         private DataGridView dgvQuests;
         private DataGridView dgvInventory;
     }
