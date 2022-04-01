@@ -47,9 +47,23 @@ namespace SuperAdventure
                     playerQuest = new PlayerQuest(newLocation.QuestAvailableHere, false);
                     _player.Quests.Add(playerQuest);
                 }
-                else if (playerQuest.IsCompleted)
+                else if (!playerQuest.IsCompleted)
                 {
-                    //check items
+                    InventoryItem ii = new InventoryItem(World.ItemByID(World.ITEM_ID_RAT_TAIL), 3);
+                    _player.Inventory.Add(ii);
+
+                    if (CheckQuestItemCompletion(newLocation.QuestAvailableHere.QuestCompletionItems))
+                    {
+                        rtbMessages.Text += "You completed the " + newLocation.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
+                        RemovePlayerQuestItems(newLocation.QuestAvailableHere.QuestCompletionItems);
+                        playerQuest.IsCompleted = true;
+                        rtbMessages.Text += "You received: " + newLocation.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
+                            + newLocation.QuestAvailableHere.RewardGold.ToString() + " gold and "
+                            + newLocation.QuestAvailableHere.RewardItem.Name + " item";
+                        _player.ExperiencePoints += newLocation.QuestAvailableHere.RewardExperiencePoints;
+                        _player.Gold += newLocation.QuestAvailableHere.RewardGold;
+                        AddItemToPlayerIventory(newLocation.QuestAvailableHere.RewardItem);
+                    }
                 }
 
                 _mainQuest = playerQuest;
@@ -58,9 +72,60 @@ namespace SuperAdventure
 
         }
 
+        private void AddItemToPlayerIventory(Item rewardItem)
+        {
+            bool isNewItem = true;
+
+            foreach (InventoryItem ii in _player.Inventory)
+            {
+                if (ii.Details.ID == rewardItem.ID)
+                {
+                    ii.Quantity++;
+                    isNewItem = false;
+                }
+            }
+            if (isNewItem)
+                _player.Inventory.Add(new InventoryItem(rewardItem, 1));
+        }
+
+        private void RemovePlayerQuestItems(List<QuestCompletionItem> questCompletionItems)
+        {
+            foreach (QuestCompletionItem item in questCompletionItems)
+            {
+                foreach (InventoryItem inventoryItem in _player.Inventory)
+                {
+                    if (item.Details.ID == inventoryItem.Details.ID)
+                    {
+                        inventoryItem.Quantity = 0;
+                        break;
+                    }
+                }
+            }
+        }
+
+        private bool CheckQuestItemCompletion(List<QuestCompletionItem> questCompletionItems)
+        {
+            bool hasTheItem = false;
+
+            foreach (QuestCompletionItem item in questCompletionItems)
+            {
+                foreach (InventoryItem inventoryItem in _player.Inventory)
+                {
+                    if (item.Details.ID == inventoryItem.Details.ID)
+                    {
+                        if (inventoryItem.Quantity == item.Quantity)
+                        {
+                            hasTheItem = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return hasTheItem;
+        }
 
         private PlayerQuest PlayerHaveQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
-        => playerQuests.SingleOrDefault(quest => quest.Details.ID == questAvailable.ID);
+        => playerQuests.Find(quest => quest.Details.ID == questAvailable.ID);
 
 
         private bool PlayerHaveThisQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
@@ -79,7 +144,7 @@ namespace SuperAdventure
             rtbLocation.Text = location.Name + Environment.NewLine;
             rtbLocation.Text += location.Description + Environment.NewLine;
 
-            rtbLocation.Text += "Main quest: " + (_mainQuest != null ? _mainQuest.Details.Name.ToString() : "");
+            //rtbLocation.Text += "Main quest: " + (_mainQuest != null ? _mainQuest.Details.Name.ToString() : "");
         }
 
         private void SetMoveButtons(Location location)
