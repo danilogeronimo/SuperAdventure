@@ -36,7 +36,7 @@ namespace SuperAdventure
 
             SetMoveButtons(newLocation);
             DisplayLocationInfo(newLocation);
-            RenewPlayerStats();
+            HealPlayer();
 
             if (LocationHasQuest(newLocation))
             {
@@ -210,7 +210,7 @@ namespace SuperAdventure
 
         private bool LocationHasQuest(Location location) => location.QuestAvailableHere != null;
 
-        private void RenewPlayerStats()
+        private void HealPlayer()
         {
             _player.CurrentHitPoints = _player.MaximumHitPoints;
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
@@ -270,17 +270,23 @@ namespace SuperAdventure
                 if (_currentMonster.CurrentHitPoints <= 0)
                 {
                     string itemName = string.Empty;
-                    string itemMsg = string.Empty;
+                    string itemMsg;
 
                     btnUseWeapon.Enabled = false;
 
                     List<string> lstItem = ReceiveLoot();
+                    _player.Gold += _currentMonster.RewardGold;
+                    _player.ExperiencePoints += _currentMonster.RewardExperiencePoints;
+                    UpdatePlayerStats();
 
                     if (lstItem != null)
                         foreach (string name in lstItem)
                             itemName += name + Environment.NewLine;
 
-                    itemMsg = !string.IsNullOrEmpty(itemName) ? "You received: " + Environment.NewLine + itemName : string.Empty;
+                    itemMsg = "You received: " + Environment.NewLine;
+                    itemMsg += !string.IsNullOrEmpty(itemName) ? itemName : string.Empty;
+                    itemMsg += _player.Gold.ToString() + " Gold";
+                    itemMsg += Environment.NewLine + _currentMonster.RewardExperiencePoints.ToString() + " XP";
 
                     DisplayCombatMsg("You beat the monster!" +
                     Environment.NewLine +
@@ -295,18 +301,25 @@ namespace SuperAdventure
                 DisplayCombatMsg("You missed the attack.");
         }
 
+        private void UpdatePlayerStats()
+        {
+            lblExperience.Text = _player.ExperiencePoints.ToString();
+            lblGold.Text = _player.Gold.ToString();
+        }
+
         private List<string> ReceiveLoot()
         {
-            List<string> dic = new List<string>();
-
+            List<string> lstItem = new List<string>();
             foreach (LootItem item in _currentMonster.LootTable)
-                if (new Random().Next(0, 100) >= item.DropPercentage)
+            {
+                if (new Random().Next(100 - item.DropPercentage, 100) >= item.DropPercentage)
                 {
                     Item it = World.ItemByID(item.Details.ID);
                     AddItemToPlayerIventory(it);
-                    dic.Add(item.Details.Name);
+                    lstItem.Add(item.Details.Name);
                 }
-            return dic;
+            }
+            return lstItem;
         }
 
         private void DisplayCombatMsg(string msg)
