@@ -36,7 +36,7 @@ namespace SuperAdventure
 
             SetMoveButtons(newLocation);
             DisplayLocationInfo(newLocation);
-            UpdatePlayerStats();
+            RenewPlayerStats();
 
             if (LocationHasQuest(newLocation))
             {
@@ -48,28 +48,109 @@ namespace SuperAdventure
                     _player.Quests.Add(playerQuest);
                 }
                 else if (!playerQuest.IsCompleted)
-                {
-                    InventoryItem ii = new InventoryItem(World.ItemByID(World.ITEM_ID_RAT_TAIL), 3);
-                    _player.Inventory.Add(ii);
-
                     if (CheckQuestItemCompletion(newLocation.QuestAvailableHere.QuestCompletionItems))
-                    {
-                        rtbMessages.Text += "You completed the " + newLocation.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
-                        RemovePlayerQuestItems(newLocation.QuestAvailableHere.QuestCompletionItems);
-                        playerQuest.IsCompleted = true;
-                        rtbMessages.Text += "You received: " + newLocation.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
-                            + newLocation.QuestAvailableHere.RewardGold.ToString() + " gold and "
-                            + newLocation.QuestAvailableHere.RewardItem.Name + " item";
-                        _player.ExperiencePoints += newLocation.QuestAvailableHere.RewardExperiencePoints;
-                        _player.Gold += newLocation.QuestAvailableHere.RewardGold;
-                        AddItemToPlayerIventory(newLocation.QuestAvailableHere.RewardItem);
-                    }
-                }
+                        CompleteQuest(newLocation, ref playerQuest);
 
                 _mainQuest = playerQuest;
                 DisplayLocationInfo(newLocation);
             }
 
+            CheckLocationMonsters(newLocation);
+
+            RefreshPlayerStats();
+            RefreshUI();
+
+        }
+
+        private void CompleteQuest(Location location, ref PlayerQuest playerQuest)
+        {
+            playerQuest.IsCompleted = true;
+            RemovePlayerQuestItems(location.QuestAvailableHere.QuestCompletionItems);
+            AddItemToPlayerIventory(location.QuestAvailableHere.RewardItem);
+            DisplayQuestMsg(location);
+        }
+
+        private void RefreshUI()
+        {
+            FillCombatCmb();
+            //TODO potions
+        }
+
+        private void RefreshPlayerStats()
+        {
+            RefreshPlayerInventory();
+            RefreshPlayerQuest();
+        }
+
+        private void RefreshPlayerQuest()
+        {
+        }
+
+        private void RefreshPlayerInventory()
+        {
+
+        }
+
+        private void CheckLocationMonsters(Location location)
+        {
+            if (location.MonsterLivingHere == null)
+            {
+                EnableControlCombat(false);
+                return;
+            }
+
+            EnableControlCombat(true);
+            DisplayMonstersMsg(location.MonsterLivingHere);
+
+            SpawnMonster(location.MonsterLivingHere);
+        }
+
+        private void SpawnMonster(Monster monsterLivingHere)
+        {
+            _currentMonster = World.MonsterByID(monsterLivingHere.ID);
+
+            FillCombatCmb();
+        }
+
+        private void FillCombatCmb()
+        {
+            List<Item> items = new List<Item>();
+            cboWeapons.DataSource = null;
+
+            foreach (InventoryItem ii in _player.Inventory)
+            {
+                if (ii.Details.GetType().Name == "Weapon")
+                {
+                    Item item = World.ItemByID(ii.Details.ID);
+                    items.Add(item);
+                }
+            }
+
+            cboWeapons.DataSource = items;
+            cboWeapons.DisplayMember = "Name";
+        }
+
+        private void DisplayMonstersMsg(Monster monster)
+        {
+            rtbMessages.Text += "You see a " + monster.Name;
+        }
+
+        private void EnableControlCombat(bool enabled = true)
+        {
+            btnUsePotion.Enabled = enabled;
+            btnUseWeapon.Enabled = enabled;
+            cboPotions.Enabled = enabled;
+            cboWeapons.Enabled = enabled;
+        }
+
+        private void DisplayQuestMsg(Location newLocation)
+        {
+            rtbMessages.Text += "You completed the " + newLocation.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
+            rtbMessages.Text += "You received: " + newLocation.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
+                + newLocation.QuestAvailableHere.RewardGold.ToString() + " gold and "
+                + newLocation.QuestAvailableHere.RewardItem.Name + " item";
+            _player.ExperiencePoints += newLocation.QuestAvailableHere.RewardExperiencePoints;
+            _player.Gold += newLocation.QuestAvailableHere.RewardGold;
         }
 
         private void AddItemToPlayerIventory(Item rewardItem)
@@ -127,13 +208,12 @@ namespace SuperAdventure
         private PlayerQuest PlayerHaveQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
         => playerQuests.Find(quest => quest.Details.ID == questAvailable.ID);
 
-
         private bool PlayerHaveThisQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
             => playerQuests.Any(q => q.Details.ID == questAvailable.ID);
 
         private bool LocationHasQuest(Location location) => location.QuestAvailableHere != null;
 
-        private void UpdatePlayerStats()
+        private void RenewPlayerStats()
         {
             _player.CurrentHitPoints = _player.MaximumHitPoints;
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
@@ -144,7 +224,9 @@ namespace SuperAdventure
             rtbLocation.Text = location.Name + Environment.NewLine;
             rtbLocation.Text += location.Description + Environment.NewLine;
 
-            //rtbLocation.Text += "Main quest: " + (_mainQuest != null ? _mainQuest.Details.Name.ToString() : "");
+            rtbLocation.Text += (_mainQuest != null ? Environment.NewLine + "Main quest: " + _mainQuest.Details.Name.ToString() : String.Empty);
+
+            rtbMessages.Text = String.Empty;
         }
 
         private void SetMoveButtons(Location location)
@@ -168,7 +250,61 @@ namespace SuperAdventure
 
         private void btnWest_Click(object sender, EventArgs e) => MoveTo(_player.CurrentLocation.LocationToWest);
 
-        private void btnUseWeapon_Click(object sender, EventArgs e) { }
+        private void btnUseWeapon_Click(object sender, EventArgs e)
+        {
+            if (_currentMonster == null)
+                return;
+            InitCombat();
+        }
+
+        private void InitCombat()
+        {
+            DisplayCombatMsg("You used " + cboWeapons.Text + " against " + _currentMonster.Name);
+
+            Weapon selectedWeapon = (Weapon)cboWeapons.SelectedItem;
+
+            int hitPoint = new Random().Next(selectedWeapon.MinimumDamage, selectedWeapon.MaximumDamage);
+            if (hitPoint > 0)
+            {
+                DisplayCombatMsg("You hit " + hitPoint.ToString());
+
+                _currentMonster.CurrentHitPoints = _currentMonster.MaximumHitPoints - hitPoint;
+
+                if (_currentMonster.CurrentHitPoints <= 0)
+                {
+                    ReceiveLoot();
+                    _currentMonster = null;
+
+                    btnUseWeapon.Enabled = false;
+
+                    DisplayCombatMsg("You beat the monster!" +
+                        Environment.NewLine +
+                        "You received: " +
+                        Environment.NewLine
+
+                        );
+                }
+            }
+            else
+                DisplayCombatMsg("You missed the attack.");
+        }
+
+        private void ReceiveLoot()
+        {
+            List<LootItem> loot = _currentMonster.LootTable;
+            foreach (LootItem item in loot)
+            {
+                Random random = new Random();
+
+                int r = random.Next(0, 100);
+
+                if (r >= item.DropPercentage)
+                    AddItemToPlayerIventory(World.ItemByID(item.Details.ID));
+            }
+        }
+
+        private void DisplayCombatMsg(string msg)
+        => rtbMessages.Text += Environment.NewLine + msg;
 
         private void btnUsePotion_Click(object sender, EventArgs e)
         {
