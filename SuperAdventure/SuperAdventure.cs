@@ -95,6 +95,7 @@ namespace SuperAdventure
         {
             if (location.MonsterLivingHere == null)
             {
+                _currentMonster = null;
                 EnableControlCombat(false);
                 return;
             }
@@ -103,14 +104,10 @@ namespace SuperAdventure
             DisplayMonstersMsg(location.MonsterLivingHere);
 
             SpawnMonster(location.MonsterLivingHere);
-        }
-
-        private void SpawnMonster(Monster monsterLivingHere)
-        {
-            _currentMonster = World.MonsterByID(monsterLivingHere.ID);
-
             FillCombatCmb();
         }
+
+        private void SpawnMonster(Monster monsterLivingHere) => _currentMonster = World.MonsterByID(monsterLivingHere.ID);
 
         private void FillCombatCmb()
         {
@@ -272,35 +269,44 @@ namespace SuperAdventure
 
                 if (_currentMonster.CurrentHitPoints <= 0)
                 {
-                    ReceiveLoot();
-                    _currentMonster = null;
+                    string itemName = string.Empty;
+                    string itemMsg = string.Empty;
 
                     btnUseWeapon.Enabled = false;
 
-                    DisplayCombatMsg("You beat the monster!" +
-                        Environment.NewLine +
-                        "You received: " +
-                        Environment.NewLine
+                    List<string> lstItem = ReceiveLoot();
 
-                        );
+                    if (lstItem != null)
+                        foreach (string name in lstItem)
+                            itemName += name + Environment.NewLine;
+
+                    itemMsg = !string.IsNullOrEmpty(itemName) ? "You received: " + Environment.NewLine + itemName : string.Empty;
+
+                    DisplayCombatMsg("You beat the monster!" +
+                    Environment.NewLine +
+                    itemMsg +
+                    Environment.NewLine
+                    );
+
+                    _currentMonster = null;
                 }
             }
             else
                 DisplayCombatMsg("You missed the attack.");
         }
 
-        private void ReceiveLoot()
+        private List<string> ReceiveLoot()
         {
-            List<LootItem> loot = _currentMonster.LootTable;
-            foreach (LootItem item in loot)
-            {
-                Random random = new Random();
+            List<string> dic = new List<string>();
 
-                int r = random.Next(0, 100);
-
-                if (r >= item.DropPercentage)
-                    AddItemToPlayerIventory(World.ItemByID(item.Details.ID));
-            }
+            foreach (LootItem item in _currentMonster.LootTable)
+                if (new Random().Next(0, 100) >= item.DropPercentage)
+                {
+                    Item it = World.ItemByID(item.Details.ID);
+                    AddItemToPlayerIventory(it);
+                    dic.Add(item.Details.Name);
+                }
+            return dic;
         }
 
         private void DisplayCombatMsg(string msg)
