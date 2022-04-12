@@ -169,8 +169,10 @@ namespace SuperAdventure
         private Monster SpawnMonster(Monster monsterLivingHere)
         {
             Monster m = World.MonsterByID(monsterLivingHere.ID);
-            Monster monster = new Monster(m.ID, m.Name, m.MaximumDamage, m.RewardExperiencePoints, m.RewardGold, m.CurrentHitPoints, m.MaximumHitPoints);
-            return monster;
+            m.CurrentHitPoints = 3;
+            m.MaximumHitPoints = 3;
+
+            return new Monster(m);
         }
 
         private void FillCombatCmb()
@@ -350,18 +352,15 @@ namespace SuperAdventure
         private List<string> ReceiveLoot()
         {
             List<string> lstItem = new List<string>();
-            //foreach (LootItem item in _currentMonster.LootTable)
-            //{
-            //    if (new Random().Next(100 - item.DropPercentage, 100) >= item.DropPercentage)
-            //    {
-            //        Item it = World.ItemByID(item.Details.ID);
-            //        AddItemToPlayerIventory(it);
-            //        lstItem.Add(item.Details.Name);
-            //    }
-            //}
-            Item it = World.ItemByID(2);
-            AddItemToPlayerIventory(it);
-            lstItem.Add("Rat tail");
+            foreach (LootItem item in _currentMonster.LootTable)
+            {
+                if (new Random().Next(100 - item.DropPercentage, 100) >= item.DropPercentage)
+                {
+                    Item it = World.ItemByID(item.Details.ID);
+                    AddItemToPlayerIventory(it);
+                    lstItem.Add(item.Details.Name);
+                }
+            }
             return lstItem;
         }
 

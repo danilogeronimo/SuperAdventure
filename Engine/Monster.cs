@@ -28,5 +28,17 @@ namespace Engine
             MaximumHitPoints = maximumHitPoints;
             LootTable = new List<LootItem>();
         }
+
+        public Monster(Monster monster) : base(monster.CurrentHitPoints, monster.MaximumHitPoints)
+        {
+            ID = monster.ID;
+            Name = monster.Name;
+            MaximumDamage = monster.MaximumDamage;
+            RewardExperiencePoints = monster.RewardExperiencePoints;
+            RewardGold = monster.RewardGold;
+            CurrentHitPoints = monster.CurrentHitPoints;
+            MaximumHitPoints = monster.MaximumHitPoints;
+            LootTable = monster.LootTable;
+        }
     }
 }
