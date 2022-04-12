@@ -121,6 +121,15 @@ namespace SuperAdventure
             RemovePlayerQuestItems(location.QuestAvailableHere.QuestCompletionItems);
             AddItemToPlayerIventory(location.QuestAvailableHere.RewardItem);
 
+            List<HealingPotion> healingPotionList = new List<HealingPotion>();
+            foreach (InventoryItem ii in _player.Inventory)
+                if (ii.Details is HealingPotion)
+                    healingPotionList.Add((HealingPotion)ii.Details);
+
+            cboPotions.DisplayMember = "Name";
+            cboPotions.ValueMember = "ID";
+            cboPotions.DataSource = healingPotionList;
+
             string msg = string.Empty;
 
             msg = Environment.NewLine + Environment.NewLine;
