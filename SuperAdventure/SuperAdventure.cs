@@ -160,22 +160,18 @@ namespace SuperAdventure
         {
             EnableControlCombat(true);
 
-            SpawnMonster(location.MonsterLivingHere);
+            _currentMonster = SpawnMonster(location.MonsterLivingHere);
             FillCombatCmb();
 
             _activeMonster += "You see a " + location.MonsterLivingHere.Name;
-
-            if (location.MonsterLivingHere != null)
-            {
-
-            }
-            else
-            {
-
-            }
         }
 
-        private void SpawnMonster(Monster monsterLivingHere) => _currentMonster = World.MonsterByID(monsterLivingHere.ID);
+        private Monster SpawnMonster(Monster monsterLivingHere)
+        {
+            Monster m = World.MonsterByID(monsterLivingHere.ID);
+            Monster monster = new Monster(m.ID, m.Name, m.MaximumDamage, m.RewardExperiencePoints, m.RewardGold, m.CurrentHitPoints, m.MaximumHitPoints);
+            return monster;
+        }
 
         private void FillCombatCmb()
         {
@@ -270,7 +266,6 @@ namespace SuperAdventure
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
         }
 
-
         private void SetMoveButtons(Location location)
         {
             btnNorth.Visible = location.LocationToNorth != null;
@@ -310,7 +305,7 @@ namespace SuperAdventure
             {
                 DisplayCombatMsg("You hit " + hitPoint.ToString());
 
-                _currentMonster.CurrentHitPoints = _currentMonster.MaximumHitPoints - hitPoint;
+                _currentMonster.CurrentHitPoints = _currentMonster.CurrentHitPoints - hitPoint;
 
                 if (_currentMonster.CurrentHitPoints <= 0)
                 {
