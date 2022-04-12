@@ -6,7 +6,9 @@ namespace SuperAdventure
     {
         private Player _player;
         private Monster _currentMonster;
-        private PlayerQuest _mainQuest;
+        private string _activeQuest, _completedQuest, _activeMonster;
+        bool _alreadyDisplayed = false;
+
         public SuperAdventure()
         {
             InitializeComponent();
@@ -33,33 +35,84 @@ namespace SuperAdventure
             }
 
             _player.CurrentLocation = newLocation;
-
             SetMoveButtons(newLocation);
-            DisplayLocationInfo(newLocation);
             HealPlayer();
 
             if (LocationHasQuest(newLocation))
+                SetPlayerQuest(newLocation);
+
+            if (LocationHasMonster(newLocation))
+                setMonster(newLocation);
+            else
             {
-                PlayerQuest playerQuest = PlayerHaveQuest(newLocation.QuestAvailableHere, _player.Quests);
-
-                if (playerQuest == null)
-                {
-                    playerQuest = new PlayerQuest(newLocation.QuestAvailableHere, false);
-                    _player.Quests.Add(playerQuest);
-                }
-                else if (!playerQuest.IsCompleted)
-                    if (CheckQuestItemCompletion(newLocation.QuestAvailableHere.QuestCompletionItems))
-                        CompleteQuest(newLocation, ref playerQuest);
-
-                _mainQuest = playerQuest;
-                DisplayLocationInfo(newLocation);
+                _currentMonster = null;
+                _activeMonster = string.Empty;
+                EnableControlCombat(false);
             }
 
-            CheckLocationMonsters(newLocation);
-
+            DisplayLocationInfo(newLocation);
             RefreshPlayerStats();
             RefreshUI();
+        }
 
+        private bool LocationHasMonster(Location location)
+         => location.MonsterLivingHere != null;
+
+        private void SetPlayerQuest(Location location)
+        {
+            PlayerQuest playerQuest = PlayerHaveQuest(location.QuestAvailableHere, _player.Quests);
+
+            if (playerQuest == null)
+            {
+                playerQuest = new PlayerQuest(location.QuestAvailableHere, false);
+                _player.Quests.Add(playerQuest);
+
+                string msg = string.Empty;
+
+                msg += Environment.NewLine;
+                msg += Environment.NewLine;
+                msg += "Active quest: " + playerQuest.Details.Name;
+                msg += Environment.NewLine;
+                msg += playerQuest.Details.Description;
+
+                _activeQuest = msg;
+                _alreadyDisplayed = false;
+            }
+            else if (!playerQuest.IsCompleted)
+                if (CheckQuestItemCompletion(location.QuestAvailableHere.QuestCompletionItems))
+                    CompleteQuest(location, ref playerQuest);
+        }
+
+        private void DisplayLocationInfo(Location newLocation)
+        {
+            rtbLocation.Text = newLocation.Name.ToString();
+            rtbLocation.Text += Environment.NewLine;
+            rtbLocation.Text += newLocation.Description.ToString();
+
+            string msgQuest = string.Empty;
+            string msgMonster = string.Empty;
+
+            rtbMessages.Text = string.Empty;
+
+            if (!string.IsNullOrEmpty(_activeQuest))
+                msgQuest += _activeQuest;
+
+            if (!string.IsNullOrEmpty(_completedQuest))
+            {
+                msgQuest += _completedQuest;
+                _alreadyDisplayed = true;
+            }
+
+            if (!string.IsNullOrEmpty(_activeMonster))
+                msgMonster += _activeMonster;
+
+            if (_alreadyDisplayed)
+            {
+                _alreadyDisplayed = false;
+                _completedQuest = string.Empty;
+            }
+            rtbLocation.Text += msgQuest;
+            rtbMessages.Text += msgMonster;
         }
 
         private void CompleteQuest(Location location, ref PlayerQuest playerQuest)
@@ -67,7 +120,19 @@ namespace SuperAdventure
             playerQuest.IsCompleted = true;
             RemovePlayerQuestItems(location.QuestAvailableHere.QuestCompletionItems);
             AddItemToPlayerIventory(location.QuestAvailableHere.RewardItem);
-            DisplayQuestMsg(location);
+
+            string msg = string.Empty;
+
+            msg = Environment.NewLine + Environment.NewLine;
+            msg += "You completed the " + location.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
+            msg += "You received: " + location.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
+                + location.QuestAvailableHere.RewardGold.ToString() + " gold and "
+                + location.QuestAvailableHere.RewardItem.Name + " item";
+            _player.ExperiencePoints += location.QuestAvailableHere.RewardExperiencePoints;
+            _player.Gold += location.QuestAvailableHere.RewardGold;
+
+            _completedQuest = msg;
+            _activeQuest = string.Empty;
         }
 
         private void RefreshUI()
@@ -91,21 +156,23 @@ namespace SuperAdventure
 
         }
 
-        private void CheckLocationMonsters(Location location)
+        private void setMonster(Location location)
         {
+            EnableControlCombat(true);
+
+            SpawnMonster(location.MonsterLivingHere);
+            FillCombatCmb();
+
+            _activeMonster += "You see a " + location.MonsterLivingHere.Name;
+
             if (location.MonsterLivingHere != null)
             {
-                EnableControlCombat(true);
 
-                SpawnMonster(location.MonsterLivingHere);
-                FillCombatCmb();
             }
             else
             {
-                _currentMonster = null;
-                EnableControlCombat(false);
+
             }
-            DisplayMonstersMsg(location.MonsterLivingHere);
         }
 
         private void SpawnMonster(Monster monsterLivingHere) => _currentMonster = World.MonsterByID(monsterLivingHere.ID);
@@ -128,15 +195,6 @@ namespace SuperAdventure
             cboWeapons.DisplayMember = "Name";
         }
 
-        private void DisplayMonstersMsg(Monster monster)
-        {
-            if (monster == null)
-            {
-                rtbMessages.Text = String.Empty;
-                return;
-            }
-            rtbMessages.Text += "You see a " + monster.Name;
-        }
 
         private void EnableControlCombat(bool enabled = true)
         {
@@ -144,16 +202,6 @@ namespace SuperAdventure
             btnUseWeapon.Enabled = enabled;
             cboPotions.Enabled = enabled;
             cboWeapons.Enabled = enabled;
-        }
-
-        private void DisplayQuestMsg(Location newLocation)
-        {
-            rtbMessages.Text += "You completed the " + newLocation.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
-            rtbMessages.Text += "You received: " + newLocation.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
-                + newLocation.QuestAvailableHere.RewardGold.ToString() + " gold and "
-                + newLocation.QuestAvailableHere.RewardItem.Name + " item";
-            _player.ExperiencePoints += newLocation.QuestAvailableHere.RewardExperiencePoints;
-            _player.Gold += newLocation.QuestAvailableHere.RewardGold;
         }
 
         private void AddItemToPlayerIventory(Item rewardItem)
@@ -222,26 +270,6 @@ namespace SuperAdventure
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
         }
 
-        private void DisplayLocationInfo(Location location)
-        {
-            rtbLocation.Text = location.Name + Environment.NewLine;
-            rtbLocation.Text += location.Description + Environment.NewLine;
-
-            string itemString = string.Empty;
-            List<Item> items = new List<Item>();
-
-            if (location.QuestAvailableHere != null)
-            {
-                foreach (QuestCompletionItem qci in location.QuestAvailableHere.QuestCompletionItems)
-                    items.Add(World.ItemByID(qci.Details.ID));
-
-                foreach (Item item in items)
-                    itemString += item.Name + ",";
-            }
-
-            rtbLocation.Text += (location.QuestAvailableHere != null ? Environment.NewLine + "Main quest: " + location.QuestAvailableHere.Name.ToString() + ". To complete it, return with: " + itemString.TrimEnd(',') : String.Empty);
-            rtbLocation.Text += String.Empty;
-        }
 
         private void SetMoveButtons(Location location)
         {
@@ -327,15 +355,18 @@ namespace SuperAdventure
         private List<string> ReceiveLoot()
         {
             List<string> lstItem = new List<string>();
-            foreach (LootItem item in _currentMonster.LootTable)
-            {
-                if (new Random().Next(100 - item.DropPercentage, 100) >= item.DropPercentage)
-                {
-                    Item it = World.ItemByID(item.Details.ID);
-                    AddItemToPlayerIventory(it);
-                    lstItem.Add(item.Details.Name);
-                }
-            }
+            //foreach (LootItem item in _currentMonster.LootTable)
+            //{
+            //    if (new Random().Next(100 - item.DropPercentage, 100) >= item.DropPercentage)
+            //    {
+            //        Item it = World.ItemByID(item.Details.ID);
+            //        AddItemToPlayerIventory(it);
+            //        lstItem.Add(item.Details.Name);
+            //    }
+            //}
+            Item it = World.ItemByID(2);
+            AddItemToPlayerIventory(it);
+            lstItem.Add("Rat tail");
             return lstItem;
         }
 
