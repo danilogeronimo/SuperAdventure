@@ -420,7 +420,24 @@ namespace SuperAdventure
 
         private void btnUsePotion_Click(object sender, EventArgs e)
         {
+            if (cboPotions.SelectedIndex == -1)
+                return;
 
+            HealingPotion selectedPotion = (HealingPotion)cboPotions.SelectedItem;
+            _player.CurrentHitPoints += selectedPotion.AmountToHeal;
+
+            if (_player.CurrentHitPoints > _player.MaximumHitPoints)
+                _player.CurrentHitPoints = _player.MaximumHitPoints;
+
+            rtbMessages.Text += Environment.NewLine;
+            rtbMessages.Text += "You healed himself with " + selectedPotion.AmountToHeal.ToString() + " points";
+
+
+            UpdatePlayerStats();
+
+            foreach (InventoryItem ii in _player.Inventory)
+                if (ii.Details.ID == selectedPotion.ID && ii.Quantity > 0)
+                    ii.Quantity--;
         }
     }
 }
