@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
@@ -51,6 +52,7 @@
             this.dgvInventory = new System.Windows.Forms.DataGridView();
             this.label6 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
+            this.tMonsterAttack = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.dgvQuests)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvInventory)).BeginInit();
             this.SuspendLayout();
@@ -282,6 +284,10 @@
             this.label7.TabIndex = 22;
             this.label7.Text = "Itens";
             // 
+            // tMonsterAttack
+            // 
+            this.tMonsterAttack.Tick += new System.EventHandler(this.tMonsterAttack_Tick);
+            // 
             // SuperAdventure
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -344,5 +350,6 @@
         private DataGridView dgvInventory;
         private Label label6;
         private Label label7;
+        private System.Windows.Forms.Timer tMonsterAttack;
     }
 }

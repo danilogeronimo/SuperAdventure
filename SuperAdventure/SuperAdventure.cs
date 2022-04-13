@@ -173,6 +173,17 @@ namespace SuperAdventure
             FillCombatCmb();
 
             _activeMonster += "You see a " + location.MonsterLivingHere.Name;
+            MonsterAttack(_currentMonster);
+        }
+
+        private void MonsterAttack(Monster monster)
+        {
+            if (monster == null)
+                return;
+
+            tMonsterAttack.Interval = 6000;
+            //tMonsterAttack.Tick += new EventHandler(tMonsterAttack_Tick);
+            tMonsterAttack.Enabled = true;
         }
 
         private Monster SpawnMonster(Monster monsterLivingHere)
@@ -302,10 +313,10 @@ namespace SuperAdventure
         {
             if (_currentMonster == null)
                 return;
-            InitCombat();
+            DamageToMonster();
         }
 
-        private void InitCombat()
+        private void DamageToMonster()
         {
             DisplayCombatMsg("You used " + cboWeapons.Text + " against " + _currentMonster.Name);
 
@@ -320,6 +331,8 @@ namespace SuperAdventure
 
                 if (_currentMonster.CurrentHitPoints <= 0)
                 {
+                    tMonsterAttack.Enabled = false;
+
                     string itemName = string.Empty;
                     string itemMsg;
 
@@ -356,6 +369,7 @@ namespace SuperAdventure
         {
             lblExperience.Text = _player.ExperiencePoints.ToString();
             lblGold.Text = _player.Gold.ToString();
+            lblHitPoints.Text = _player.CurrentHitPoints.ToString();
         }
 
         private List<string> ReceiveLoot()
@@ -371,6 +385,34 @@ namespace SuperAdventure
                 }
             }
             return lstItem;
+        }
+
+        private void tMonsterAttack_Tick(object sender, EventArgs e)
+        {
+            Random random = new Random();
+            int damage = random.Next(0, _currentMonster.MaximumDamage);
+
+            if (damage > 0)
+            {
+                MonsterHitPlayer(damage);
+                UpdatePlayerStats();
+            }
+        }
+
+        private void MonsterHitPlayer(int damage)
+        {
+            rtbMessages.Text += Environment.NewLine;
+            rtbMessages.Text += "You take " + damage.ToString() + " damage from the " + _currentMonster.Name;
+            _player.CurrentHitPoints -= damage;
+
+            if (_player.CurrentHitPoints <= 0)
+            {
+                tMonsterAttack.Enabled = false;
+                _player.CurrentHitPoints = 0;
+
+                rtbMessages.Text += Environment.NewLine;
+                rtbMessages.Text += "YOU DIED";
+            }
         }
 
         private void DisplayCombatMsg(string msg)
