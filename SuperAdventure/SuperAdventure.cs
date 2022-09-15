@@ -162,7 +162,6 @@ namespace SuperAdventure
 
         private void RefreshPlayerInventory()
         {
-
         }
 
         private void setMonster(Location location)
@@ -212,7 +211,6 @@ namespace SuperAdventure
             cboWeapons.DataSource = items;
             cboWeapons.DisplayMember = "Name";
         }
-
 
         private void EnableControlCombat(bool enabled = true)
         {
@@ -298,7 +296,6 @@ namespace SuperAdventure
 
         private void UpdatePlayerLocation(Location location)
         {
-
         }
 
         private void btnNorth_Click(object sender, EventArgs e) => MoveTo(_player.CurrentLocation.LocationToNorth);
@@ -431,7 +428,6 @@ namespace SuperAdventure
 
             rtbMessages.Text += Environment.NewLine;
             rtbMessages.Text += "You healed himself with " + selectedPotion.AmountToHeal.ToString() + " points";
-
 
             UpdatePlayerStats();
 
