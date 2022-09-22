@@ -2,6 +2,7 @@ using Engine;
 
 namespace SuperAdventure
 {
+   //página 76
     public partial class SuperAdventure : Form
     {
         private Player _player;
@@ -21,6 +22,15 @@ namespace SuperAdventure
             lblGold.Text = _player.Gold.ToString();
             lblExperience.Text = _player.ExperiencePoints.ToString();
             lblLevel.Text = _player.Level.ToString();
+
+            initInventoryGrid();
+            RefreshInventoryGrid();
+        }
+
+        private void initInventoryGrid()
+        {
+            dgvInventory.Columns.Add("Name", "Name");
+            dgvInventory.Columns.Add("Qtde", "Qtde");
         }
 
         private void MoveTo(Location newLocation)
@@ -35,90 +45,40 @@ namespace SuperAdventure
             }
 
             _player.CurrentLocation = newLocation;
+            DisplayLocationInfo(newLocation);
             SetMoveButtons(newLocation);
             HealPlayer();
+            //RefreshUI();
 
-            if (LocationHasQuest(newLocation))
-                SetPlayerQuest(newLocation);
+            LookForQuests(newLocation);
+            LookForMonsters(newLocation);
+        }
 
+        private void LookForMonsters(Location newLocation)
+        {
             if (LocationHasMonster(newLocation))
-                setMonster(newLocation);
+            {
+                setMonster(newLocation.MonsterLivingHere);
+                RefreshCombos();
+            }
             else
-            {
-                _currentMonster = null;
-                _activeMonster = string.Empty;
                 EnableControlCombat(false);
-            }
-
-            DisplayLocationInfo(newLocation);
-            RefreshPlayerStats();
-            RefreshUI();
         }
-
-        private bool LocationHasMonster(Location location)
-         => location.MonsterLivingHere != null;
-
-        private void SetPlayerQuest(Location location)
+        private bool checkActiveQuest()
         {
-            PlayerQuest playerQuest = PlayerHaveQuest(location.QuestAvailableHere, _player.Quests);
-
-            if (playerQuest == null)
-            {
-                playerQuest = new PlayerQuest(location.QuestAvailableHere, false);
-                _player.Quests.Add(playerQuest);
-
-                string msg = string.Empty;
-
-                msg += Environment.NewLine;
-                msg += Environment.NewLine;
-                msg += "Active quest: " + playerQuest.Details.Name;
-                msg += Environment.NewLine;
-                msg += playerQuest.Details.Description;
-
-                _activeQuest = msg;
-                _alreadyDisplayed = false;
-            }
-            else if (!playerQuest.IsCompleted)
-                if (CheckQuestItemCompletion(location.QuestAvailableHere.QuestCompletionItems))
-                    CompleteQuest(location, ref playerQuest);
+            foreach (DataGridViewRow row in dgvQuests.Rows)
+                if (!String.IsNullOrEmpty(row.Cells["Completed"].Value.ToString())
+                        && row.Cells["Completed"].Value.ToString() == "No")
+                {
+                    return true;
+                }
+            return false;
         }
 
-        private void DisplayLocationInfo(Location newLocation)
-        {
-            rtbLocation.Text = newLocation.Name.ToString();
-            rtbLocation.Text += Environment.NewLine;
-            rtbLocation.Text += newLocation.Description.ToString();
-
-            string msgQuest = string.Empty;
-            string msgMonster = string.Empty;
-
-            rtbMessages.Text = string.Empty;
-
-            if (!string.IsNullOrEmpty(_activeQuest))
-                msgQuest += _activeQuest;
-
-            if (!string.IsNullOrEmpty(_completedQuest))
-            {
-                msgQuest += _completedQuest;
-                _alreadyDisplayed = true;
-            }
-
-            if (!string.IsNullOrEmpty(_activeMonster))
-                msgMonster += _activeMonster;
-
-            if (_alreadyDisplayed)
-            {
-                _alreadyDisplayed = false;
-                _completedQuest = string.Empty;
-            }
-            rtbLocation.Text += msgQuest;
-            rtbMessages.Text += msgMonster;
-        }
-
-        private void CompleteQuest(Location location, ref PlayerQuest playerQuest)
+        private void CompleteQuest(Location location, PlayerQuest playerQuest)
         {
             playerQuest.IsCompleted = true;
-            RemovePlayerQuestItems(location.QuestAvailableHere.QuestCompletionItems);
+            RemovePlayerInventoryItens(location.QuestAvailableHere.QuestCompletionItems);
             AddItemToPlayerIventory(location.QuestAvailableHere.RewardItem);
 
             List<HealingPotion> healingPotionList = new List<HealingPotion>();
@@ -140,61 +100,174 @@ namespace SuperAdventure
             _player.ExperiencePoints += location.QuestAvailableHere.RewardExperiencePoints;
             _player.Gold += location.QuestAvailableHere.RewardGold;
 
-            _completedQuest = msg;
+            //_completedQuest = msg;
+            rtbLocation.Text = msg;
             _activeQuest = string.Empty;
         }
 
+        private void setQuestGrid()
+        {
+            if (_player.Quests.Count < 1) return;
+
+            dgvQuests.Columns.Add("ID", "ID");
+            dgvQuests.Columns["ID"].Visible = false;
+
+            dgvQuests.Columns.Add("Title", "Title");
+            dgvQuests.Columns.Add("Completed", "Completed");
+            dgvQuests.Columns.Add("Item", "Item needed");
+
+            string itensQuest = string.Empty;
+
+            foreach (PlayerQuest pq in _player.Quests)
+            {
+                foreach(QuestCompletionItem qci in pq.Details.QuestCompletionItems)
+                    itensQuest += qci.Quantity + " " + qci.Details.Name.ToString();
+
+                itensQuest += "\n";
+                dgvQuests.Rows.Add(pq.Details.ID,pq.Details.Name, (pq.IsCompleted) ? "Yes" : "No", itensQuest);
+            }
+
+           
+        }
+
+        private void LookForQuests(Location newLocation)
+        {
+            if (LocationHasQuest(newLocation))
+            {
+                if (PlayerHasThisQuest(newLocation.QuestAvailableHere, _player.Quests))
+                {
+                    if (!QuestAlreadyCompleted(_player.Quests))
+                    {
+                        if (PlayerHasTheItens(newLocation.QuestAvailableHere, _player.Inventory))
+                        {
+                            CompleteQuest(newLocation,_player.Quests.Find(pq => pq.Details.ID == newLocation.QuestAvailableHere.ID));
+                            clearGridQuest(_player.Quests.Find(pq => pq.Details.ID == newLocation.QuestAvailableHere.ID).Details.ID);
+                        }
+                    }
+                    else
+                    {
+                        foreach (PlayerQuest pq in _player.Quests)
+                            if (pq.Details.ID == newLocation.QuestAvailableHere.ID && pq.IsCompleted)
+                                clearGridQuest(pq.Details.ID);
+                    }
+                }
+                else //new quest
+                    SetPlayerQuest(newLocation);                    
+            }
+        }
+
+        private void clearGridQuest(int questId)
+        {
+            foreach(DataGridViewRow row in dgvQuests.Rows)
+            {
+                if (Convert.ToInt32(row.Cells["ID"].Value) == questId)
+                {
+                    dgvQuests.Rows.Remove(row);
+                    break;
+                }
+            }
+        }
+
+        private bool PlayerHasThisQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
+                    => playerQuests.Any(q => q.Details.ID == questAvailable.ID);
+
+        private bool QuestAlreadyCompleted(List<PlayerQuest> playerQuest)
+        {
+            foreach(PlayerQuest pq in playerQuest)
+                if (pq.IsCompleted) return true;
+            return false;
+        }
+        private bool PlayerHasTheItens(Quest quest, List<InventoryItem> playerItens)
+        {
+            foreach(InventoryItem ii in playerItens)
+            {
+                foreach(QuestCompletionItem qqi in quest.QuestCompletionItems)
+                {
+                    if (qqi.Details.ID == ii.Details.ID)
+                        if (qqi.Quantity == ii.Quantity)
+                            return true;
+                }
+            }
+            return false;
+        }
+
+        private bool LocationHasMonster(Location location)
+         => location.MonsterLivingHere != null;
+        private void SetPlayerQuest(Location location)
+        {
+            _player.Quests.Add(new PlayerQuest(location.QuestAvailableHere, false));
+            //definir grid
+            setQuestGrid();
+        }
+        private void DisplayLocationInfo(Location newLocation)
+        {
+            rtbLocation.Text = newLocation.Name.ToString();
+            rtbLocation.Text += Environment.NewLine;
+            rtbLocation.Text += newLocation.Description.ToString();
+
+            string msgQuest = string.Empty;
+            string msgMonster = string.Empty;
+
+            rtbMessages.Text = string.Empty;
+
+            if (!string.IsNullOrEmpty(_completedQuest))
+            {
+                msgQuest += _completedQuest;
+                _alreadyDisplayed = true;
+            }
+
+            if (!string.IsNullOrEmpty(_activeMonster))
+                msgMonster += _activeMonster;
+
+            if (_alreadyDisplayed)
+            {
+                _alreadyDisplayed = false;
+                _completedQuest = string.Empty;
+            }
+            rtbLocation.Text += msgQuest;
+            rtbMessages.Text += msgMonster;
+        }
         private void RefreshUI()
         {
-            FillCombatCmb();
+            //FillCombatCmb();
             //TODO potions
         }
 
-        private void RefreshPlayerStats()
+        private void setMonster(Monster monster)
         {
-            RefreshPlayerInventory();
-            RefreshPlayerQuest();
-        }
-
-        private void RefreshPlayerQuest()
-        {
-        }
-
-        private void RefreshPlayerInventory()
-        {
-        }
-
-        private void setMonster(Location location)
-        {
+            _currentMonster = SpawnMonster(monster);
+            DisplayMonsterInfo();
+            
             EnableControlCombat(true);
 
-            _currentMonster = SpawnMonster(location.MonsterLivingHere);
-            FillCombatCmb();
-
-            _activeMonster += "You see a " + location.MonsterLivingHere.Name;
             MonsterAttack(_currentMonster);
+        }
+
+        private void DisplayMonsterInfo()
+        {
+            rtbMessages.Text = "You see a " + _currentMonster.Name;
         }
 
         private void MonsterAttack(Monster monster)
         {
-            if (monster == null)
-                return;
-
             tMonsterAttack.Interval = 6000;
-            //tMonsterAttack.Tick += new EventHandler(tMonsterAttack_Tick);
             tMonsterAttack.Enabled = true;
         }
 
-        private Monster SpawnMonster(Monster monsterLivingHere)
-        {
-            Monster m = World.MonsterByID(monsterLivingHere.ID);
-            m.CurrentHitPoints = 3;
-            m.MaximumHitPoints = 3;
+        private Monster SpawnMonster(Monster monsterLivingHere) => World.MonsterByID(monsterLivingHere.ID);
 
-            return new Monster(m);
+        private void RefreshCombos()
+        {
+            RefreshCombatCombo();
+            RefreshItemCombo();
         }
 
-        private void FillCombatCmb()
+        private void RefreshItemCombo()
+        {
+            return;
+        }
+
+        private void RefreshCombatCombo()
         {
             List<Item> items = new List<Item>();
             cboWeapons.DataSource = null;
@@ -236,7 +309,7 @@ namespace SuperAdventure
                 _player.Inventory.Add(new InventoryItem(rewardItem, 1));
         }
 
-        private void RemovePlayerQuestItems(List<QuestCompletionItem> questCompletionItems)
+        private void RemovePlayerInventoryItens(List<QuestCompletionItem> questCompletionItems)
         {
             foreach (QuestCompletionItem item in questCompletionItems)
             {
@@ -250,34 +323,6 @@ namespace SuperAdventure
                 }
             }
         }
-
-        private bool CheckQuestItemCompletion(List<QuestCompletionItem> questCompletionItems)
-        {
-            bool hasTheItem = false;
-
-            foreach (QuestCompletionItem item in questCompletionItems)
-            {
-                foreach (InventoryItem inventoryItem in _player.Inventory)
-                {
-                    if (item.Details.ID == inventoryItem.Details.ID)
-                    {
-                        if (inventoryItem.Quantity == item.Quantity)
-                        {
-                            hasTheItem = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            return hasTheItem;
-        }
-
-        private PlayerQuest PlayerHaveQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
-        => playerQuests.Find(quest => quest.Details.ID == questAvailable.ID);
-
-        private bool PlayerHaveThisQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
-            => playerQuests.Any(q => q.Details.ID == questAvailable.ID);
-
         private bool LocationHasQuest(Location location) => location.QuestAvailableHere != null;
 
         private void HealPlayer()
@@ -308,9 +353,26 @@ namespace SuperAdventure
 
         private void btnUseWeapon_Click(object sender, EventArgs e)
         {
-            if (_currentMonster == null)
-                return;
-            DamageToMonster();
+            DamageToMonster();                  
+
+            //killed the monster
+            if(_currentMonster == null)
+            {
+                RefreshCombos();
+                RefreshInventoryGrid();
+            }
+        }
+
+        private void RefreshInventoryGrid()
+        {
+            if(_player.Inventory.Count == 0) return;
+
+            dgvInventory.Rows.Clear();
+
+            foreach(InventoryItem ii in _player.Inventory)
+            {
+                dgvInventory.Rows.Add(ii.Details.Name, ii.Quantity);
+            }
         }
 
         private void DamageToMonster()
@@ -349,10 +411,11 @@ namespace SuperAdventure
                     itemMsg += _currentMonster.RewardGold.ToString() + " Gold";
                     itemMsg += Environment.NewLine + _currentMonster.RewardExperiencePoints.ToString() + " XP";
 
-                    DisplayCombatMsg("You beat the monster!" +
-                    Environment.NewLine +
-                    itemMsg +
-                    Environment.NewLine
+                    DisplayCombatMsg(
+                        "You beat the monster!" +
+                        Environment.NewLine +
+                        itemMsg +
+                        Environment.NewLine
                     );
 
                     _currentMonster = null;
@@ -376,7 +439,8 @@ namespace SuperAdventure
             {
                 if (new Random().Next(100 - item.DropPercentage, 100) >= item.DropPercentage)
                 {
-                    Item it = World.ItemByID(item.Details.ID);
+                    //Item it = World.ItemByID(item.Details.ID);
+                    Item it = World.ItemByID(2);
                     AddItemToPlayerIventory(it);
                     lstItem.Add(item.Details.Name);
                 }
