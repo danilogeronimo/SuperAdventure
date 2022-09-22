@@ -2,7 +2,7 @@ using Engine;
 
 namespace SuperAdventure
 {
-   //página 76
+   //página 93
     public partial class SuperAdventure : Form
     {
         private Player _player;
@@ -439,8 +439,7 @@ namespace SuperAdventure
             {
                 if (new Random().Next(100 - item.DropPercentage, 100) >= item.DropPercentage)
                 {
-                    //Item it = World.ItemByID(item.Details.ID);
-                    Item it = World.ItemByID(2);
+                    Item it = World.ItemByID(item.Details.ID);                   
                     AddItemToPlayerIventory(it);
                     lstItem.Add(item.Details.Name);
                 }
