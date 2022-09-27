@@ -23,6 +23,13 @@ namespace SuperAdventure
             lblExperience.Text = _player.ExperiencePoints.ToString();
             lblLevel.Text = _player.Level.ToString();
 
+            dgvQuests.Columns.Add("ID", "ID");
+            dgvQuests.Columns["ID"].Visible = false;
+
+            dgvQuests.Columns.Add("Title", "Title");
+            dgvQuests.Columns.Add("Completed", "Completed");
+            dgvQuests.Columns.Add("Item", "Item needed");
+
             initInventoryGrid();
             RefreshInventoryGrid();
         }
@@ -109,18 +116,14 @@ namespace SuperAdventure
         {
             if (_player.Quests.Count < 1) return;
 
-            dgvQuests.Columns.Add("ID", "ID");
-            dgvQuests.Columns["ID"].Visible = false;
-
-            dgvQuests.Columns.Add("Title", "Title");
-            dgvQuests.Columns.Add("Completed", "Completed");
-            dgvQuests.Columns.Add("Item", "Item needed");
-
             string itensQuest = string.Empty;
+
+            dgvQuests.Rows.Clear();
 
             foreach (PlayerQuest pq in _player.Quests)
             {
-                foreach(QuestCompletionItem qci in pq.Details.QuestCompletionItems)
+                itensQuest = string.Empty;
+                foreach (QuestCompletionItem qci in pq.Details.QuestCompletionItems)
                     itensQuest += qci.Quantity + " " + qci.Details.Name.ToString();
 
                 itensQuest += "\n";
@@ -136,19 +139,19 @@ namespace SuperAdventure
             {
                 if (PlayerHasThisQuest(newLocation.QuestAvailableHere, _player.Quests))
                 {
-                    if (!QuestAlreadyCompleted(_player.Quests))
+                    if (!QuestAlreadyCompleted(newLocation.QuestAvailableHere,_player.Quests))
                     {
                         if (PlayerHasTheItens(newLocation.QuestAvailableHere, _player.Inventory))
                         {
                             CompleteQuest(newLocation,_player.Quests.Find(pq => pq.Details.ID == newLocation.QuestAvailableHere.ID));
-                            clearGridQuest(_player.Quests.Find(pq => pq.Details.ID == newLocation.QuestAvailableHere.ID).Details.ID);
+                            setQuestGrid();
                         }
                     }
                     else
                     {
                         foreach (PlayerQuest pq in _player.Quests)
                             if (pq.Details.ID == newLocation.QuestAvailableHere.ID && pq.IsCompleted)
-                                clearGridQuest(pq.Details.ID);
+                                setQuestGrid();
                     }
                 }
                 else //new quest
@@ -156,25 +159,13 @@ namespace SuperAdventure
             }
         }
 
-        private void clearGridQuest(int questId)
-        {
-            foreach(DataGridViewRow row in dgvQuests.Rows)
-            {
-                if (Convert.ToInt32(row.Cells["ID"].Value) == questId)
-                {
-                    dgvQuests.Rows.Remove(row);
-                    break;
-                }
-            }
-        }
-
         private bool PlayerHasThisQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
                     => playerQuests.Any(q => q.Details.ID == questAvailable.ID);
 
-        private bool QuestAlreadyCompleted(List<PlayerQuest> playerQuest)
+        private bool QuestAlreadyCompleted(Quest quest,List<PlayerQuest> playerQuest)
         {
             foreach(PlayerQuest pq in playerQuest)
-                if (pq.IsCompleted) return true;
+                if (pq.IsCompleted && quest.ID == pq.Details.ID) return true;
             return false;
         }
         private bool PlayerHasTheItens(Quest quest, List<InventoryItem> playerItens)
