@@ -234,10 +234,8 @@ namespace SuperAdventure
             MonsterAttack(_currentMonster);
         }
 
-        private void DisplayMonsterInfo()
-        {
+        private void DisplayMonsterInfo() =>
             rtbMessages.Text = "You see a " + _currentMonster.Name;
-        }
 
         private void MonsterAttack(Monster monster)
         {
@@ -466,8 +464,17 @@ namespace SuperAdventure
             }
         }
 
-        private void DisplayCombatMsg(string msg)
-        => rtbMessages.Text += Environment.NewLine + msg;
+        private void DisplayCombatMsg(string msg) =>
+            rtbMessages.Text += Environment.NewLine + msg;
+
+        private void rtbMessages_TextChanged(object sender, EventArgs e)
+            => ScrollToTheBotton();
+
+        private void ScrollToTheBotton()
+        {
+            rtbMessages.SelectionStart = rtbMessages.Text.Length;
+            rtbMessages.ScrollToCaret();
+        }
 
         private void btnUsePotion_Click(object sender, EventArgs e)
         {
