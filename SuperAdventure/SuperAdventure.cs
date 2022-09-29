@@ -14,14 +14,11 @@ namespace SuperAdventure
         {
             InitializeComponent();
 
-            _player = new Player(10, 10, 20, 0, 1);
+            _player = new Player(10, 10, 20, 1);
             MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
             _player.Inventory.Add(new InventoryItem(World.ItemByID(World.ITEM_ID_RUSTY_SWORD), 1));
 
-            lblHitPoints.Text = _player.CurrentHitPoints.ToString();
-            lblGold.Text = _player.Gold.ToString();
-            lblExperience.Text = _player.ExperiencePoints.ToString();
-            lblLevel.Text = _player.Level.ToString();
+            UpdatePlayerStats();
 
             dgvQuests.Columns.Add("ID", "ID");
             dgvQuests.Columns["ID"].Visible = false;
@@ -54,11 +51,12 @@ namespace SuperAdventure
             _player.CurrentLocation = newLocation;
             DisplayLocationInfo(newLocation);
             SetMoveButtons(newLocation);
-            HealPlayer();
             //RefreshUI();
 
             LookForQuests(newLocation);
             LookForMonsters(newLocation);
+
+            UpdatePlayerStats();
         }
 
         private void LookForMonsters(Location newLocation)
@@ -71,16 +69,16 @@ namespace SuperAdventure
             else
                 EnableControlCombat(false);
         }
-        private bool checkActiveQuest()
-        {
-            foreach (DataGridViewRow row in dgvQuests.Rows)
-                if (!String.IsNullOrEmpty(row.Cells["Completed"].Value.ToString())
-                        && row.Cells["Completed"].Value.ToString() == "No")
-                {
-                    return true;
-                }
-            return false;
-        }
+        //private bool checkActiveQuest()
+        //{
+        //    foreach (DataGridViewRow row in dgvQuests.Rows)
+        //        if (!String.IsNullOrEmpty(row.Cells["Completed"].Value.ToString())
+        //                && row.Cells["Completed"].Value.ToString() == "No")
+        //        {
+        //            return true;
+        //        }
+        //    return false;
+        //}
 
         private void CompleteQuest(Location location, PlayerQuest playerQuest)
         {
@@ -316,12 +314,6 @@ namespace SuperAdventure
         }
         private bool LocationHasQuest(Location location) => location.QuestAvailableHere != null;
 
-        private void HealPlayer()
-        {
-            _player.CurrentHitPoints = _player.MaximumHitPoints;
-            lblHitPoints.Text = _player.CurrentHitPoints.ToString();
-        }
-
         private void SetMoveButtons(Location location)
         {
             btnNorth.Visible = location.LocationToNorth != null;
@@ -391,7 +383,6 @@ namespace SuperAdventure
                     List<string> lstItem = ReceiveLoot();
                     _player.Gold += _currentMonster.RewardGold;
                     _player.ExperiencePoints += _currentMonster.RewardExperiencePoints;
-                    UpdatePlayerStats();
 
                     if (lstItem != null)
                         foreach (string name in lstItem)
@@ -421,6 +412,7 @@ namespace SuperAdventure
             lblExperience.Text = _player.ExperiencePoints.ToString();
             lblGold.Text = _player.Gold.ToString();
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
+            lblLevel.Text = _player.Level.ToString();
         }
 
         private List<string> ReceiveLoot()
