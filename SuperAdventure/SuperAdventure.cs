@@ -39,24 +39,28 @@ namespace SuperAdventure
 
         private void MoveTo(Location newLocation)
         {
-            if (newLocation.ItemRequiredToEnter != null)
-            {
-                if (_player.Inventory.FirstOrDefault(item => item.Details.ID == newLocation.ItemRequiredToEnter.ID) == null)
-                {
-                    rtbMessages.Text = "You must have a " + newLocation.ItemRequiredToEnter.Name + " to enter this location." + Environment.NewLine;
-                    return;
-                }
-            }
+            //RefreshUI();
 
+            if (CheckIfItemIsRequired(newLocation))
+            {
+                rtbMessages.Text = "You must have a " + newLocation.ItemRequiredToEnter.Name + " to enter this location." + Environment.NewLine;
+                return;
+            }
             _player.CurrentLocation = newLocation;
             DisplayLocationInfo(newLocation);
             SetMoveButtons(newLocation);
-            //RefreshUI();
-
             LookForQuests(newLocation);
             LookForMonsters(newLocation);
 
             UpdatePlayerStats();
+        }
+
+        private bool CheckIfItemIsRequired(Location location)
+        {
+            if (location.ItemRequiredToEnter == null) return false;
+
+            return !_player.Inventory.Where(ii => ii.Details.ID == location.ItemRequiredToEnter.ID
+                && ii.Quantity > 0).Any();
         }
 
         private void LookForMonsters(Location newLocation)
@@ -69,16 +73,6 @@ namespace SuperAdventure
             else
                 EnableControlCombat(false);
         }
-        //private bool checkActiveQuest()
-        //{
-        //    foreach (DataGridViewRow row in dgvQuests.Rows)
-        //        if (!String.IsNullOrEmpty(row.Cells["Completed"].Value.ToString())
-        //                && row.Cells["Completed"].Value.ToString() == "No")
-        //        {
-        //            return true;
-        //        }
-        //    return false;
-        //}
 
         private void CompleteQuest(Location location, PlayerQuest playerQuest)
         {
@@ -168,7 +162,7 @@ namespace SuperAdventure
         }
         private bool PlayerHasTheItens(Quest quest, List<InventoryItem> playerItens)
         {
-            foreach(InventoryItem ii in playerItens)
+            foreach (InventoryItem ii in playerItens)
             {
                 foreach(QuestCompletionItem qqi in quest.QuestCompletionItems)
                 {
@@ -320,10 +314,6 @@ namespace SuperAdventure
             btnEast.Visible = location.LocationToEast != null;
             btnSouth.Visible = location.LocationToSouth != null;
             btnWest.Visible = location.LocationToWest != null;
-        }
-
-        private void UpdatePlayerLocation(Location location)
-        {
         }
 
         private void btnNorth_Click(object sender, EventArgs e) => MoveTo(_player.CurrentLocation.LocationToNorth);
