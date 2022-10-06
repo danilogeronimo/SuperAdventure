@@ -173,15 +173,10 @@ namespace SuperAdventure
         
         private bool PlayerHasTheItens(Quest quest, List<InventoryItem> playerItens)
         {
-            foreach (InventoryItem ii in playerItens)
-            {
-                foreach(QuestCompletionItem qqi in quest.QuestCompletionItems)
-                {
-                    if (qqi.Details.ID == ii.Details.ID)
-                        if (qqi.Quantity == ii.Quantity)
-                            return true;
-                }
-            }
+            foreach (InventoryItem ii in playerItens)            
+                foreach (QuestCompletionItem qqi in quest.QuestCompletionItems)
+                    if (quest.QuestCompletionItems.Exists(qqi => qqi.Details.ID == ii.Details.ID && qqi.Quantity == ii.Quantity)) return true;
+            
             return false;
         }
 
