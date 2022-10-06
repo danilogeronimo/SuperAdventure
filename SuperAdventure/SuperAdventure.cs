@@ -2,6 +2,7 @@ using Engine;
 
 namespace SuperAdventure
 {
+   //página 93
     public partial class SuperAdventure : Form
     {
         private Player _player;
@@ -13,14 +14,11 @@ namespace SuperAdventure
         {
             InitializeComponent();
 
-            _player = new Player(10, 10, 20, 0, 1);
+            _player = new Player(10, 10, 20, 1);
             MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
             _player.Inventory.Add(new InventoryItem(World.ItemByID(World.ITEM_ID_RUSTY_SWORD), 1));
 
-            lblHitPoints.Text = _player.CurrentHitPoints.ToString();
-            lblGold.Text = _player.Gold.ToString();
-            lblExperience.Text = _player.ExperiencePoints.ToString();
-            lblLevel.Text = _player.Level.ToString();
+            UpdatePlayerStats();
 
             dgvQuests.Columns.Add("ID", "ID");
             dgvQuests.Columns["ID"].Visible = false;
@@ -41,23 +39,28 @@ namespace SuperAdventure
 
         private void MoveTo(Location newLocation)
         {
-            if (newLocation.ItemRequiredToEnter != null)
-            {
-                if (_player.Inventory.FirstOrDefault(item => item.Details.ID == newLocation.ItemRequiredToEnter.ID) == null)
-                {
-                    rtbMessages.Text = "You must have a " + newLocation.ItemRequiredToEnter.Name + " to enter this location." + Environment.NewLine;
-                    return;
-                }
-            }
+            //RefreshUI();
 
+            if (CheckIfItemIsRequired(newLocation))
+            {
+                rtbMessages.Text = "You must have a " + newLocation.ItemRequiredToEnter.Name + " to enter this location." + Environment.NewLine;
+                return;
+            }
             _player.CurrentLocation = newLocation;
             DisplayLocationInfo(newLocation);
             SetMoveButtons(newLocation);
-            HealPlayer();
-            //RefreshUI();
-
             LookForQuests(newLocation);
             LookForMonsters(newLocation);
+
+            UpdatePlayerStats();
+        }
+
+        private bool CheckIfItemIsRequired(Location location)
+        {
+            if (location.ItemRequiredToEnter == null) return false;
+
+            return !_player.Inventory.Where(ii => ii.Details.ID == location.ItemRequiredToEnter.ID
+                && ii.Quantity > 0).Any();
         }
 
         private void LookForMonsters(Location newLocation)
@@ -69,16 +72,6 @@ namespace SuperAdventure
             }
             else
                 EnableControlCombat(false);
-        }
-        private bool checkActiveQuest()
-        {
-            foreach (DataGridViewRow row in dgvQuests.Rows)
-                if (!String.IsNullOrEmpty(row.Cells["Completed"].Value.ToString())
-                        && row.Cells["Completed"].Value.ToString() == "No")
-                {
-                    return true;
-                }
-            return false;
         }
 
         private void CompleteQuest(Location location, PlayerQuest playerQuest)
@@ -169,15 +162,10 @@ namespace SuperAdventure
         }
         private bool PlayerHasTheItens(Quest quest, List<InventoryItem> playerItens)
         {
-            foreach(InventoryItem ii in playerItens)
-            {
-                foreach(QuestCompletionItem qqi in quest.QuestCompletionItems)
-                {
-                    if (qqi.Details.ID == ii.Details.ID)
-                        if (qqi.Quantity == ii.Quantity)
-                            return true;
-                }
-            }
+            foreach (InventoryItem ii in playerItens)            
+                foreach (QuestCompletionItem qqi in quest.QuestCompletionItems)
+                    if (quest.QuestCompletionItems.Exists(qqi => qqi.Details.ID == ii.Details.ID && qqi.Quantity == ii.Quantity)) return true;
+            
             return false;
         }
 
@@ -233,8 +221,10 @@ namespace SuperAdventure
             MonsterAttack(_currentMonster);
         }
 
-        private void DisplayMonsterInfo() =>
+        private void DisplayMonsterInfo()
+        {
             rtbMessages.Text = "You see a " + _currentMonster.Name;
+        }
 
         private void MonsterAttack(Monster monster)
         {
@@ -313,22 +303,12 @@ namespace SuperAdventure
         }
         private bool LocationHasQuest(Location location) => location.QuestAvailableHere != null;
 
-        private void HealPlayer()
-        {
-            _player.CurrentHitPoints = _player.MaximumHitPoints;
-            lblHitPoints.Text = _player.CurrentHitPoints.ToString();
-        }
-
         private void SetMoveButtons(Location location)
         {
             btnNorth.Visible = location.LocationToNorth != null;
             btnEast.Visible = location.LocationToEast != null;
             btnSouth.Visible = location.LocationToSouth != null;
             btnWest.Visible = location.LocationToWest != null;
-        }
-
-        private void UpdatePlayerLocation(Location location)
-        {
         }
 
         private void btnNorth_Click(object sender, EventArgs e) => MoveTo(_player.CurrentLocation.LocationToNorth);
@@ -388,7 +368,6 @@ namespace SuperAdventure
                     List<string> lstItem = ReceiveLoot();
                     _player.Gold += _currentMonster.RewardGold;
                     _player.ExperiencePoints += _currentMonster.RewardExperiencePoints;
-                    UpdatePlayerStats();
 
                     if (lstItem != null)
                         foreach (string name in lstItem)
@@ -418,6 +397,7 @@ namespace SuperAdventure
             lblExperience.Text = _player.ExperiencePoints.ToString();
             lblGold.Text = _player.Gold.ToString();
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
+            lblLevel.Text = _player.Level.ToString();
         }
 
         private List<string> ReceiveLoot()
@@ -463,17 +443,8 @@ namespace SuperAdventure
             }
         }
 
-        private void DisplayCombatMsg(string msg) =>
-            rtbMessages.Text += Environment.NewLine + msg;
-
-        private void rtbMessages_TextChanged(object sender, EventArgs e)
-            => ScrollToTheBotton();
-
-        private void ScrollToTheBotton()
-        {
-            rtbMessages.SelectionStart = rtbMessages.Text.Length;
-            rtbMessages.ScrollToCaret();
-        }
+        private void DisplayCombatMsg(string msg)
+        => rtbMessages.Text += Environment.NewLine + msg;
 
         private void btnUsePotion_Click(object sender, EventArgs e)
         {
