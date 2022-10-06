@@ -12,7 +12,7 @@ namespace SuperAdventure
 
         public SuperAdventure()
         {
-            InitializeComponent();
+            InitializeComponent();            
 
             _player = new Player(10, 10, 20, 0, 1);
             MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
@@ -59,6 +59,16 @@ namespace SuperAdventure
 
             LookForQuests(newLocation);
             LookForMonsters(newLocation);
+
+            UpdatePlayerStats();
+        }
+
+        private bool CheckIfItemIsRequired(Location location)
+        {
+            if (location.ItemRequiredToEnter == null) return false;
+
+            return !_player.Inventory.Exists(ii => ii.Details.ID == location.ItemRequiredToEnter.ID
+                && ii.Quantity > 0);
         }
 
         private void LookForMonsters(Location newLocation)
@@ -139,7 +149,7 @@ namespace SuperAdventure
             {
                 if (PlayerHasThisQuest(newLocation.QuestAvailableHere, _player.Quests))
                 {
-                    if (!QuestAlreadyCompleted(newLocation.QuestAvailableHere,_player.Quests))
+                    if (!QuestAlreadyCompleted(newLocation.QuestAvailableHere))
                     {
                         if (PlayerHasTheItens(newLocation.QuestAvailableHere, _player.Inventory))
                         {
@@ -148,11 +158,7 @@ namespace SuperAdventure
                         }
                     }
                     else
-                    {
-                        foreach (PlayerQuest pq in _player.Quests)
-                            if (pq.Details.ID == newLocation.QuestAvailableHere.ID && pq.IsCompleted)
-                                setQuestGrid();
-                    }
+                        setQuestGrid();
                 }
                 else //new quest
                     SetPlayerQuest(newLocation);                    
@@ -160,17 +166,14 @@ namespace SuperAdventure
         }
 
         private bool PlayerHasThisQuest(Quest questAvailable, List<PlayerQuest> playerQuests)
-                    => playerQuests.Any(q => q.Details.ID == questAvailable.ID);
+                    => playerQuests.Exists(q => q.Details.ID == questAvailable.ID);
 
-        private bool QuestAlreadyCompleted(Quest quest,List<PlayerQuest> playerQuest)
-        {
-            foreach(PlayerQuest pq in playerQuest)
-                if (pq.IsCompleted && quest.ID == pq.Details.ID) return true;
-            return false;
-        }
+        private bool QuestAlreadyCompleted(Quest quest) =>
+            _player.Quests.Exists(pq => pq.Details.ID == quest.ID && pq.IsCompleted); 
+        
         private bool PlayerHasTheItens(Quest quest, List<InventoryItem> playerItens)
         {
-            foreach(InventoryItem ii in playerItens)
+            foreach (InventoryItem ii in playerItens)
             {
                 foreach(QuestCompletionItem qqi in quest.QuestCompletionItems)
                 {
@@ -457,13 +460,27 @@ namespace SuperAdventure
             _player.CurrentHitPoints -= damage;
 
             if (_player.CurrentHitPoints <= 0)
-            {
-                tMonsterAttack.Enabled = false;
-                _player.CurrentHitPoints = 0;
+                GameOver();
+        }
 
-                rtbMessages.Text += Environment.NewLine;
-                rtbMessages.Text += "YOU DIED";
-            }
+        private void GameOver()
+        {
+            tMonsterAttack.Enabled = false;
+            _player.CurrentHitPoints = 0;
+
+            rtbMessages.Text += Environment.NewLine;
+            rtbMessages.Text += "YOU DIED";
+            setAllButtons(false);
+        }
+
+        private void setAllButtons(bool status)
+        {
+            btnUseWeapon.Enabled = status;
+            btnUsePotion.Enabled = status;
+            btnNorth.Enabled = status;
+            btnEast.Enabled = status;
+            btnSouth.Enabled = status;
+            btnWest.Enabled = status;
         }
 
         private void DisplayCombatMsg(string msg)
