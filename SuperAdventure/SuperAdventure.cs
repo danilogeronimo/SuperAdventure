@@ -2,7 +2,7 @@ using Engine;
 
 namespace SuperAdventure
 {
-   //página 93
+   //pï¿½gina 93
     public partial class SuperAdventure : Form
     {
         private Player _player;
@@ -162,10 +162,12 @@ namespace SuperAdventure
         }
         private bool PlayerHasTheItens(Quest quest, List<InventoryItem> playerItens)
         {
+
             foreach (InventoryItem ii in playerItens)            
                 foreach (QuestCompletionItem qqi in quest.QuestCompletionItems)
                     if (quest.QuestCompletionItems.Exists(qqi => qqi.Details.ID == ii.Details.ID && qqi.Quantity == ii.Quantity)) return true;
             
+
             return false;
         }
 
