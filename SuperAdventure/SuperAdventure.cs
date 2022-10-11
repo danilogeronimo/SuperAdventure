@@ -14,7 +14,7 @@ namespace SuperAdventure
         {
             InitializeComponent();            
 
-            _player = new Player(10, 10, 20, 0, 1);
+            _player = new Player(10, 10, 20, 0);
             MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
             _player.Inventory.Add(new InventoryItem(World.ItemByID(World.ITEM_ID_RUSTY_SWORD), 1));
 
@@ -113,11 +113,10 @@ namespace SuperAdventure
             msg += "You completed the " + location.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
             msg += "You received: " + location.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
                 + location.QuestAvailableHere.RewardGold.ToString() + " gold and "
-                + location.QuestAvailableHere.RewardItem.Name + " item";
-            _player.ExperiencePoints += location.QuestAvailableHere.RewardExperiencePoints;
+                + location.QuestAvailableHere.RewardItem.Name + " item";            
             _player.Gold += location.QuestAvailableHere.RewardGold;
+            _player.ExperiencePoints += location.QuestAvailableHere.RewardExperiencePoints;
 
-            //_completedQuest = msg;
             rtbLocation.Text = msg;
             _activeQuest = string.Empty;
         }
@@ -419,6 +418,7 @@ namespace SuperAdventure
             lblExperience.Text = _player.ExperiencePoints.ToString();
             lblGold.Text = _player.Gold.ToString();
             lblHitPoints.Text = _player.CurrentHitPoints.ToString();
+            lblLevel.Text = _player.Level.ToString();
         }
 
         private List<string> ReceiveLoot()
