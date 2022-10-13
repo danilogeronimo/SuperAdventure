@@ -39,13 +39,12 @@ namespace SuperAdventure
 
         private void MoveTo(Location newLocation)
         {
-            //RefreshUI();
-
             if (CheckIfItemIsRequired(newLocation))
             {
-                rtbMessages.Text = "You must have a " + newLocation.ItemRequiredToEnter.Name + " to enter this location." + Environment.NewLine;
+                rtbMessages.Text += "You must have a " + newLocation.ItemRequiredToEnter.Name + " to enter this location." + Environment.NewLine;
                 return;
             }
+
             _player.CurrentLocation = newLocation;
             DisplayLocationInfo(newLocation);
             SetMoveButtons(newLocation);
@@ -176,7 +175,7 @@ namespace SuperAdventure
             string msgQuest = string.Empty;
             string msgMonster = string.Empty;
 
-            rtbMessages.Text = string.Empty;
+            //rtbMessages.Text = string.Empty;
 
             if (!string.IsNullOrEmpty(_completedQuest))
             {
@@ -213,7 +212,7 @@ namespace SuperAdventure
 
         private void DisplayMonsterInfo()
         {
-            rtbMessages.Text = "You see a " + _currentMonster.Name;
+            rtbMessages.Text += "You see a " + _currentMonster.Name;
         }
 
         private void MonsterAttack(Monster monster)
@@ -445,6 +444,12 @@ namespace SuperAdventure
             btnEast.Enabled = status;
             btnSouth.Enabled = status;
             btnWest.Enabled = status;
+        }
+
+        private void rtbMessages_TextChanged(object sender, EventArgs e)
+        {
+            rtbMessages.SelectionStart = rtbMessages.Text.Length;
+            rtbMessages.ScrollToCaret();
         }
 
         private void DisplayCombatMsg(string msg)
