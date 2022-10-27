@@ -1,34 +1,48 @@
 using Engine;
+using System.IO;
+using System.Numerics;
 
 namespace SuperAdventure
 {
-   //p�gina 93
     public partial class SuperAdventure : Form
     {
         private Player _player;
         private Monster _currentMonster;
         private string _activeQuest, _completedQuest, _activeMonster;
         bool _alreadyDisplayed = false;
+        private const string PLAYER_DATA_FILE_NAME = "PlayerData.xml";
 
         public SuperAdventure()
         {
-            InitializeComponent();            
+            InitializeComponent();
+            InitQuestsGrid();
 
-            _player = new Player(10, 10, 20, 0);
-            MoveTo(World.LocationByID(World.LOCATION_ID_HOME));
-            _player.Inventory.Add(new InventoryItem(World.ItemByID(World.ITEM_ID_RUSTY_SWORD), 1));
+            if (File.Exists(PLAYER_DATA_FILE_NAME))
+            {
+                _player = Player.CreatePlayerFromXmlString(File.ReadAllText(PLAYER_DATA_FILE_NAME));
+                RefreshCombatCombo();
+                setQuestGrid();
+                RefreshItemsCombo();
+            }
+            else
+                _player = Player.CreateDefaultPlayer();
 
-            UpdatePlayerStats();
+            MoveTo(World.LocationByID(_player.CurrentLocation.ID));
 
+            UpdatePlayerStats();            
+
+            initInventoryGrid();
+            RefreshInventoryGrid();
+        }
+
+        private void InitQuestsGrid()
+        {
             dgvQuests.Columns.Add("ID", "ID");
             dgvQuests.Columns["ID"].Visible = false;
 
             dgvQuests.Columns.Add("Title", "Title");
             dgvQuests.Columns.Add("Completed", "Completed");
             dgvQuests.Columns.Add("Item", "Item needed");
-
-            initInventoryGrid();
-            RefreshInventoryGrid();
         }
 
         private void initInventoryGrid()
@@ -77,6 +91,24 @@ namespace SuperAdventure
             RemovePlayerInventoryItens(location.QuestAvailableHere.QuestCompletionItems);
             AddItemToPlayerIventory(location.QuestAvailableHere.RewardItem);
 
+            RefreshItemsCombo();
+
+            string msg = string.Empty;
+
+            msg = Environment.NewLine + Environment.NewLine;
+            msg += "You completed the " + location.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
+            msg += "You received: " + location.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
+                + location.QuestAvailableHere.RewardGold.ToString() + " gold and "
+                + location.QuestAvailableHere.RewardItem.Name + " item";
+            _player.Gold += location.QuestAvailableHere.RewardGold;
+            _player.ExperiencePoints += location.QuestAvailableHere.RewardExperiencePoints;
+
+            rtbLocation.Text = msg;
+            _activeQuest = string.Empty;
+        }
+
+        private void RefreshItemsCombo()
+        {
             List<HealingPotion> healingPotionList = new List<HealingPotion>();
             foreach (InventoryItem ii in _player.Inventory)
                 if (ii.Details is HealingPotion)
@@ -85,19 +117,6 @@ namespace SuperAdventure
             cboPotions.DisplayMember = "Name";
             cboPotions.ValueMember = "ID";
             cboPotions.DataSource = healingPotionList;
-
-            string msg = string.Empty;
-
-            msg = Environment.NewLine + Environment.NewLine;
-            msg += "You completed the " + location.QuestAvailableHere.Name + " quest!" + Environment.NewLine;
-            msg += "You received: " + location.QuestAvailableHere.RewardExperiencePoints.ToString() + " xp and "
-                + location.QuestAvailableHere.RewardGold.ToString() + " gold and "
-                + location.QuestAvailableHere.RewardItem.Name + " item";            
-            _player.Gold += location.QuestAvailableHere.RewardGold;
-            _player.ExperiencePoints += location.QuestAvailableHere.RewardExperiencePoints;
-
-            rtbLocation.Text = msg;
-            _activeQuest = string.Empty;
         }
 
         private void setQuestGrid()
@@ -139,7 +158,7 @@ namespace SuperAdventure
                         setQuestGrid();
                 }
                 else //new quest
-                    SetPlayerQuest(newLocation);                    
+                    SetPlayerQuest(newLocation);
             }
         }
 
@@ -327,9 +346,7 @@ namespace SuperAdventure
             dgvInventory.Rows.Clear();
 
             foreach(InventoryItem ii in _player.Inventory)
-            {
                 dgvInventory.Rows.Add(ii.Details.Name, ii.Quantity);
-            }
         }
 
         private void DamageToMonster()
@@ -451,6 +468,9 @@ namespace SuperAdventure
             rtbMessages.SelectionStart = rtbMessages.Text.Length;
             rtbMessages.ScrollToCaret();
         }
+
+        private void SuperAdventure_FormClosing(object sender, FormClosingEventArgs e)
+            =>  File.WriteAllText(PLAYER_DATA_FILE_NAME,_player.ToXMLString());
 
         private void DisplayCombatMsg(string msg)
         => rtbMessages.Text += Environment.NewLine + msg;
